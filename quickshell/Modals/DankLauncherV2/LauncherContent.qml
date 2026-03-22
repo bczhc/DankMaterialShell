@@ -226,11 +226,12 @@ FocusScope {
             }
             event.accepted = false;
             return;
-        case Qt.Key_Tab:
+	    case Qt.Key_Tab:
             if (hasCtrl && actionPanel.hasActions) {
                 actionPanel.expanded ? actionPanel.cycleAction() : actionPanel.show();
                 return;
             }
+            if (!hasCtrl && root.parentModal) {root.parentModal.hide(); return;}
             controller.selectNext();
             return;
         case Qt.Key_Backtab:
