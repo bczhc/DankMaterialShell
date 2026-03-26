@@ -258,6 +258,8 @@ Singleton {
         if (prefix.length > 0)
             cmd = prefix.split(" ").concat(cmd);
 
+        cmd = ['dms-unpolluted-launch', ...cmd]
+        console.log(cmd, workDir, JSON.stringify(finalEnv)); 
         Quickshell.execDetached({
             command: cmd,
             workingDirectory: workDir,
@@ -267,6 +269,8 @@ Singleton {
 
     function launchDesktopAction(desktopEntry, action, useNvidia) {
         let cmd = action.command;
+        console.log('action command', cmd);
+        cmd = ['dms-unpolluted-launch', ...cmd];
 
         const appId = desktopEntry.id || desktopEntry.execString || desktopEntry.exec || "";
         const override = SessionData.getAppOverride(appId);
