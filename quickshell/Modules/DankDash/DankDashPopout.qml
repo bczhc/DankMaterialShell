@@ -275,8 +275,8 @@ DankPopout {
                                 "text": I18n.tr("Media")
                             },
                             {
-                                "icon": "wallpaper",
-                                "text": I18n.tr("Wallpapers")
+                                "icon": "tune",
+                                "text": I18n.tr("System")
                             }
                         ];
 
@@ -394,16 +394,14 @@ DankPopout {
                     }
 
                     Loader {
-                        id: wallpaperLoader
+                        id: systemLoader
                         anchors.fill: parent
                         active: root.currentTabIndex === 2
                         visible: active
                         sourceComponent: Component {
-                            WallpaperTab {
-                                active: true
+                            SystemTab {
                                 tabBarItem: tabBar
                                 keyForwardTarget: mainContainer
-                                targetScreen: root.screen
                                 parentPopout: root
                             }
                         }
