@@ -82,6 +82,55 @@ Item {
                 }
             }
 
+            // GPU Clock 选择区域
+            Column {
+                width: parent.width
+                spacing: Theme.spacingM
+
+                StyledText {
+                    text: I18n.tr("GPU Clock")
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.weight: Font.Medium
+                    color: Theme.surfaceText
+                }
+
+                StyledText {
+                    text: I18n.tr("Select GPU clock preset")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                }
+
+                Row {
+                    spacing: Theme.spacingS
+
+                    DankButton {
+                        text: I18n.tr("Low")
+                        onClicked: {
+                            Proc.runCommand("gpuClockLow", ["nvidia-clock", "low"])
+                        }
+                    }
+                    DankButton {
+                        text: I18n.tr("Normal")
+                        onClicked: {
+                            Proc.runCommand("gpuClockNormal", ["nvidia-clock", "normal"])
+                        }
+                    }
+                    DankButton {
+                        text: I18n.tr("High")
+                        onClicked: {
+                            Proc.runCommand("gpuClockHigh", ["nvidia-clock", "high"])
+                        }
+                    }
+                }
+
+                StyledText {
+                    text: I18n.tr("Will call nvidia-clock command with selected preset")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    opacity: 0.6
+                }
+            }
+
             Rectangle {
                 width: parent.width
                 height: 1
