@@ -1646,6 +1646,10 @@ Item {
             searchDebounce.stop();
             performSearch();
         }
+        if (_pluginPhasePending) {
+            pluginPhaseTimer.stop();
+            _performPluginPhase();
+        }
         if (!selectedItem)
             return;
         executeItem(selectedItem);
