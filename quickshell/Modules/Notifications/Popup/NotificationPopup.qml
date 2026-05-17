@@ -28,6 +28,7 @@ PanelWindow {
     property int screenY: 0
     property bool exiting: false
     property bool _isDestroying: false
+    readonly property color notificationBg: "#e6d2da"
     property bool _finalized: false
     property real _lastReportedAlignedHeight: -1
     property real _storedTopMargin: 0
@@ -409,7 +410,7 @@ PanelWindow {
             sourceRect.width: Math.max(0, content.width - (content.cardInset * 2))
             sourceRect.height: Math.max(0, content.height - (content.cardInset * 2))
             sourceRect.radius: Theme.cornerRadius
-            sourceRect.color: Theme.withAlpha(Theme.surfaceContainer, Theme.popupTransparency)
+            sourceRect.color: Theme.withAlpha(notificationBg, Theme.popupTransparency)
             sourceRect.border.color: notificationData && notificationData.urgency === NotificationUrgency.Critical ? Theme.withAlpha(Theme.primary, 0.3) : Theme.withAlpha(Theme.outline, 0.08)
             sourceRect.border.width: notificationData && notificationData.urgency === NotificationUrgency.Critical ? 2 : 0
 

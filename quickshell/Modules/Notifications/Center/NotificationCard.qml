@@ -48,6 +48,7 @@ Rectangle {
     property real shadowOffsetXPx: shadowsAllowed ? Theme.elevationOffsetX(shadowElevation) : 0
     property real shadowOffsetYPx: shadowsAllowed ? (Theme.elevationOffsetY(shadowElevation, 1) + (cardHoverHandler.hovered ? 0.35 : 0)) : 0
     property bool __initialized: false
+    readonly property color notificationBg: "#e6d2da"
 
     Component.onCompleted: {
         Qt.callLater(() => {
@@ -100,7 +101,7 @@ Rectangle {
         if (keyboardNavigationActive && expanded && selectedNotificationIndex >= 0) {
             return Theme.primaryHoverLight;
         }
-        return Theme.withAlpha(Theme.surfaceContainerHigh, Theme.popupTransparency);
+        return Theme.withAlpha(notificationBg, Theme.popupTransparency);
     }
     border.color: {
         if (isGroupSelected && keyboardNavigationActive) {

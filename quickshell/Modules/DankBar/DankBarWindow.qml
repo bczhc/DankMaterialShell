@@ -235,7 +235,7 @@ PanelWindow {
     property bool gothCornersEnabled: barConfig?.gothCornersEnabled ?? false
     property real wingtipsRadius: barConfig?.gothCornerRadiusOverride ? (barConfig?.gothCornerRadiusValue ?? 12) : Theme.cornerRadius
     readonly property real _wingR: Math.max(0, wingtipsRadius)
-    readonly property color _surfaceContainer: Theme.surfaceContainer
+    readonly property color _surfaceContainer: Theme.surface
     readonly property string _barId: barConfig?.id ?? "default"
     property real _backgroundAlpha: barConfig?.transparency ?? 1.0
     readonly property color _bgColor: Theme.withAlpha(_surfaceContainer, _backgroundAlpha)
