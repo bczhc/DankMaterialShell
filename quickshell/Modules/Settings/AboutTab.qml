@@ -112,6 +112,98 @@ Item {
     property bool showReddit: isNiri && !isHyprland && !isSway && !isScroll && !isMiracle && !isDwl && !isLabwc
     property bool showIrc: isLabwc
 
+    property string archOS: ""
+    property string archHost: ""
+    property string archDevice: ""
+    property string archKernel: ""
+    property string archUptime: ""
+    property string archPackages: ""
+    property string archShell: ""
+    property string archCompositor: ""
+    property string archDisplay: ""
+    property string archDisplay2: ""
+    property string archCPU: ""
+    property string archGPU: ""
+    property string archGPU2: ""
+    property string archMemory: ""
+
+    // Configurable sizes
+    property real archLogoSize: 128
+    property real archFontSize: 32
+
+    Component.onCompleted: {
+        Proc.runCommand("arch-os", ["sh", "-c", "cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'\"' -f2"], (out, code) => {
+            if (code === 0 && out.trim()) archOS = out.trim();
+        });
+        Proc.runCommand("arch-host", ["sh", "-c", "cat /sys/devices/virtual/dmi/id/product_name 2>/dev/null || echo -n"], (out, code) => {
+            if (code === 0 && out.trim()) archHost = out.trim();
+        });
+        Proc.runCommand("arch-device", ["uname", "-n"], (out, code) => {
+            if (code === 0) archDevice = out.trim();
+        });
+        Proc.runCommand("arch-kernel", ["uname", "-r"], (out, code) => {
+            if (code === 0) archKernel = out.trim();
+        });
+        Proc.runCommand("arch-uptime", ["uptime", "-p"], (out, code) => {
+            if (code === 0) archUptime = out.trim().replace(/^up /, "");
+        });
+        Proc.runCommand("arch-pkgs", ["sh", "-c", "pacman -Q 2>/dev/null | wc -l"], (out, code) => {
+            if (code === 0) archPackages = out.trim() + " (pacman)";
+        });
+        Proc.runCommand("arch-shell", ["sh", "-c", "basename ${SHELL} 2>/dev/null || echo $SHELL"], (out, code) => {
+            if (code === 0 && out.trim()) archShell = out.trim();
+        });
+        Proc.runCommand("arch-cpu", ["sh", "-c", "grep 'model name' /proc/cpuinfo 2>/dev/null | head -1 | cut -d':' -f2- | xargs"], (out, code) => {
+            if (code === 0 && out.trim()) archCPU = out.trim();
+        });
+        Proc.runCommand("arch-gpu", ["sh", "-c", "lspci 2>/dev/null | grep -iE 'vga|3d|display' | cut -d':' -f3- | sed 's/^ *//'"], (out, code) => {
+            if (code === 0 && out.trim()) {
+                var lines = out.trim().split("\n");
+                archGPU = lines[0] || "";
+                archGPU2 = lines[1] || "";
+            }
+        });
+        Proc.runCommand("arch-mem", ["sh", "-c", "free -b 2>/dev/null | awk '/^Mem:/ {printf \"%.1f GiB\", $2/1073741824}'"], (out, code) => {
+            if (code === 0 && out.trim()) archMemory = out.trim();
+        });
+        var compVerCmd = compositorName + " --version 2>/dev/null | head -1";
+        if (compositorName === "hyprland") compVerCmd = "Hyprland --version 2>/dev/null | head -1";
+        Proc.runCommand("arch-compositor", ["sh", "-c", compVerCmd], (out, code) => {
+            if (code === 0 && out.trim()) archCompositor = out.trim();
+            else archCompositor = compositorName;
+        });
+        Proc.runCommand("arch-display", ["sh", "-c", "niri msg outputs 2>/dev/null | awk 'function flush(){if(c&&m){di=int(sqrt(w*w+h*h)/25.4+0.5);printf\"%s @ %.0f Hz, %d\\\", %.2fx\\n\",m,r,di,s}} /^Output/{flush();c=$NF;gsub(/[()]/,\"\",c);m=\"\";r=\"\";w=0;h=0;s=1} /Current mode:/{m=$3;r=$5} /Physical size:/{split($3,d,\"x\");w=d[1]+0;h=d[2]+0} /Scale:/{s=$2+0} END{flush()}'"], (out, code) => {
+            if (code === 0 && out.trim()) {
+                var lines = out.trim().split("\n");
+                archDisplay = lines[0] || "";
+                archDisplay2 = lines[1] || "";
+            }
+        });
+    }
+
+    component InfoRow: Row {
+        property string label: ""
+        property string value: ""
+
+        width: parent ? parent.width : 0
+        spacing: Theme.spacingL
+        visible: value !== ""
+
+        StyledText {
+            text: label
+            font.pixelSize: Theme.fontSizeMedium
+            color: Theme.surfaceVariantText
+            width: 80
+        }
+        StyledText {
+            text: value
+            font.pixelSize: Theme.fontSizeMedium
+            color: Theme.surfaceText
+            width: parent ? parent.width - 80 - Theme.spacingL : 0
+            elide: Text.ElideRight
+        }
+    }
+
     DankFlickable {
         anchors.fill: parent
         clip: true
@@ -126,140 +218,216 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Theme.spacingXL
 
-            // ASCII Art Header
+            // Combined Logo Card
             StyledRect {
                 width: parent.width
-                height: asciiSection.implicitHeight + Theme.spacingL * 2
+                height: logoSection.implicitHeight + Theme.spacingL * 2
                 radius: Theme.cornerRadius
                 color: Theme.surfaceContainerHigh
                 border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
                 border.width: 0
 
                 Column {
-                    id: asciiSection
+                    id: logoSection
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingL
+                    spacing: Theme.spacingM
 
+                    Column {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: Theme.spacingM
+
+                        // Arch Linux
+                        Row {
+                            spacing: Theme.spacingM
+
+                            Item { width: archLogoSize + 8; height: archLogoSize; anchors.verticalCenter: parent.verticalCenter
+                                Image {
+                                    //source: "file:///usr/share/icons/archlinux.png"
+                                    source: "file:///usr/share/icons/dms-archlinux-logo-tm.svg"
+                                    width: archLogoSize; height: archLogoSize
+                                    fillMode: Image.PreserveAspectFit
+                                    smooth: true
+                                    anchors.centerIn: parent
+                                }
+                            }
+
+                            Column { anchors.verticalCenter: parent.verticalCenter
+                                StyledText { text: "Arch Linux"; font.pixelSize: archFontSize; font.weight: Font.Bold; color: Theme.surfaceText }
+                                StyledText { text: "A simple, lightweight Linux distribution"; font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText }
+                            }
+                        }
+
+                        Rectangle {
+                            width: 280
+                            height: 1
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.15)
+                        }
+
+                        // DANK LINUX
+                        Row {
+                            spacing: Theme.spacingM
+
+                            Item { width: archLogoSize + 8; height: archLogoSize; anchors.verticalCenter: parent.verticalCenter
+                                Image {
+                                    id: logoImage
+                                    anchors.centerIn: parent
+                                    width: archLogoSize; height: archLogoSize * (569.94629 / 506.50931)
+                                    fillMode: Image.PreserveAspectFit; smooth: true; mipmap: true; asynchronous: true
+                                    source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
+                                    layer.enabled: true; layer.smooth: true; layer.mipmap: true
+                                    layer.effect: MultiEffect { saturation: 0; colorization: 1; colorizationColor: Theme.primary }
+                                }
+                            }
+
+                            Column { anchors.verticalCenter: parent.verticalCenter
+                                Text { text: "DANK LINUX"; font.pixelSize: 28; font.weight: Font.Bold; font.family: interFont.name; color: Theme.surfaceText; antialiasing: true }
+                                StyledText {
+                                    text: {
+                                        if (!SystemUpdateService.shellVersion && !DMSService.cliVersion) return "dms";
+                                        let v = SystemUpdateService.shellVersion || DMSService.cliVersion || "";
+                                        let m = v.match(/^([\d.]+)\+git(\d+)\./);
+                                        if (m) return `dms (git) v${m[1]}-${m[2]}`;
+                                        m = v.match(/^([\d.]+)$/);
+                                        if (m) return `dms v${m[1]}`;
+                                        return `dms ${v}`;
+                                    }
+                                    font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText
+                                }
+                            }
+                        }
+                    }
+
+                    FontLoader {
+                        id: interFont
+                        source: Qt.resolvedUrl("../../assets/fonts/inter/InterVariable.ttf")
+                    }
+                }
+            }
+
+            // Software Info
+            StyledRect {
+                width: parent.width
+                height: softwareSection.implicitHeight + Theme.spacingL * 2
+                radius: Theme.cornerRadius
+                color: Theme.surfaceContainerHigh
+                border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
+                border.width: 0
+
+                Column {
+                    id: softwareSection
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingL
+                    spacing: Theme.spacingS
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+                        DankIcon {
+                            name: "terminal"
+                            size: Theme.iconSize
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        StyledText {
+                            text: "Software"
+                            font.pixelSize: Theme.fontSizeLarge
+                            font.weight: Font.Medium
+                            color: Theme.surfaceText
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    Item { width: 1; height: 1 }
+
+                    InfoRow { label: "OS"; value: archOS }
+                    InfoRow { label: "Device"; value: archDevice }
+                    InfoRow { label: "Host"; value: archHost }
+                    InfoRow { label: "Kernel"; value: archKernel }
+                    InfoRow { label: "Uptime"; value: archUptime }
+                    InfoRow { label: "Packages"; value: archPackages }
+                    InfoRow { label: "Shell"; value: archShell }
+                    InfoRow { label: "Compositor"; value: archCompositor }
+                    InfoRow { label: "DMS"; value: SystemUpdateService.shellVersion || DMSService.cliVersion || "" }
+                }
+            }
+
+            // Hardware Info
+            StyledRect {
+                width: parent.width
+                height: hardwareSection.implicitHeight + Theme.spacingL * 2
+                radius: Theme.cornerRadius
+                color: Theme.surfaceContainerHigh
+                border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
+                border.width: 0
+
+                Column {
+                    id: hardwareSection
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingL
+                    spacing: Theme.spacingS
+
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+                        DankIcon {
+                            name: "memory"
+                            size: Theme.iconSize
+                            color: Theme.primary
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        StyledText {
+                            text: "Hardware"
+                            font.pixelSize: Theme.fontSizeLarge
+                            font.weight: Font.Medium
+                            color: Theme.surfaceText
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    Item { width: 1; height: 1 }
+
+                    InfoRow { label: "Display"; value: archDisplay }
+                    InfoRow { label: "Display"; value: archDisplay2 }
+                    InfoRow { label: "Memory"; value: archMemory }
+                    InfoRow { label: "CPU"; value: archCPU }
+                    InfoRow { label: "GPU"; value: archGPU }
+                    InfoRow { label: "GPU"; value: archGPU2 }
+                }
+            }
+
+            // Resources
+            StyledRect {
+                width: parent.width
+                height: resourceSection.implicitHeight + Theme.spacingL * 2
+                radius: Theme.cornerRadius
+                color: Theme.surfaceContainerHigh
+                border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
+                border.width: 0
+
+                Column {
+                    id: resourceSection
                     anchors.fill: parent
                     anchors.margins: Theme.spacingL
                     spacing: Theme.spacingM
 
                     Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: parent.width < 350 ? Theme.spacingM : Theme.spacingL
-
-                        property bool compactLogo: parent.width < 400
-                        property bool hideLogo: parent.width < 280
-
-                        Image {
-                            id: logoImage
-
-                            visible: !parent.hideLogo
+                        width: parent.width
+                        spacing: Theme.spacingM
+                        DankIcon {
+                            name: "link"
+                            size: Theme.iconSize
+                            color: Theme.primary
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.compactLogo ? 80 : 120
-                            height: width * (569.94629 / 506.50931)
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
-                            mipmap: true
-                            asynchronous: true
-                            source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
-                            layer.enabled: true
-                            layer.smooth: true
-                            layer.mipmap: true
-                            layer.effect: MultiEffect {
-                                saturation: 0
-                                colorization: 1
-                                colorizationColor: Theme.primary
-                            }
                         }
-
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "DANK LINUX"
-                            font.pixelSize: parent.compactLogo ? 32 : 48
-                            font.weight: Font.Bold
-                            font.family: interFont.name
+                        StyledText {
+                            text: I18n.tr("Resources")
+                            font.pixelSize: Theme.fontSizeLarge
+                            font.weight: Font.Medium
                             color: Theme.surfaceText
-                            antialiasing: true
-
-                            FontLoader {
-                                id: interFont
-                                source: Qt.resolvedUrl("../../assets/fonts/inter/InterVariable.ttf")
-                            }
+                            anchors.verticalCenter: parent.verticalCenter
                         }
-                    }
-
-                    StyledText {
-                        text: {
-                            if (!SystemUpdateService.shellVersion && !DMSService.cliVersion)
-                                return "dms";
-
-                            let version = SystemUpdateService.shellVersion || "";
-                            let cliVersion = DMSService.cliVersion || "";
-
-                            // Debian/Ubuntu/OpenSUSE git format: 1.0.3+git2264.c5c5ce84
-                            let match = version.match(/^([\d.]+)\+git(\d+)\./);
-                            if (match) {
-                                return `dms (git) v${match[1]}-${match[2]}`;
-                            }
-
-                            // Fedora COPR git format: 0.0.git.2267.d430cae9
-                            match = version.match(/^[\d.]+\.git\.(\d+)\./);
-                            if (match) {
-                                function extractBaseVersion(value) {
-                                    if (!value)
-                                        return "";
-                                    let baseMatch = value.match(/(\d+\.\d+\.\d+)/);
-                                    if (baseMatch)
-                                        return baseMatch[1];
-                                    baseMatch = value.match(/(\d+\.\d+)/);
-                                    if (baseMatch)
-                                        return baseMatch[1];
-                                    return "";
-                                }
-
-                                let baseVersion = extractBaseVersion(cliVersion);
-                                if (!baseVersion)
-                                    baseVersion = extractBaseVersion(SystemUpdateService.semverVersion);
-                                if (baseVersion) {
-                                    return `dms (git) v${baseVersion}-${match[1]}`;
-                                }
-                                return `dms (git) v${match[1]}`;
-                            }
-
-                            // Stable release format: 1.0.3
-                            match = version.match(/^([\d.]+)$/);
-                            if (match) {
-                                return `dms v${match[1]}`;
-                            }
-
-                            if (!version && cliVersion) {
-                                match = cliVersion.match(/^([\d.]+)\+git(\d+)\./);
-                                if (match) {
-                                    return `dms (git) v${match[1]}-${match[2]}`;
-                                }
-                                match = cliVersion.match(/^([\d.]+)$/);
-                                if (match) {
-                                    return `dms v${match[1]}`;
-                                }
-                                return `dms ${cliVersion}`;
-                            }
-
-                            return `dms ${version}`;
-                        }
-                        font.pixelSize: Theme.fontSizeXLarge
-                        font.weight: Font.Bold
-                        color: Theme.surfaceText
-                        horizontalAlignment: Text.AlignHCenter
-                        width: parent.width
-                    }
-
-                    StyledText {
-                        visible: SystemUpdateService.shellCodename.length > 0
-                        text: `"${SystemUpdateService.shellCodename}"`
-                        font.pixelSize: Theme.fontSizeMedium
-                        font.italic: true
-                        color: Theme.surfaceVariantText
-                        horizontalAlignment: Text.AlignHCenter
-                        width: parent.width
                     }
 
                     Row {
@@ -344,32 +512,21 @@ Item {
                         height: 24
                         width: {
                             let baseWidth = compositorButton.width + dmsDiscordButton.width + Theme.spacingM;
-                            if (showMatrix) {
-                                baseWidth += matrixButton.width + 4;
-                            }
-                            if (showIrc) {
-                                baseWidth += ircButton.width + Theme.spacingM;
-                            }
-                            if (showCompositorDiscord) {
-                                baseWidth += compositorDiscordButton.width + Theme.spacingM;
-                            }
-                            if (showReddit) {
-                                baseWidth += redditButton.width + Theme.spacingM;
-                            }
+                            if (showMatrix) baseWidth += matrixButton.width + 4;
+                            if (showIrc) baseWidth += ircButton.width + Theme.spacingM;
+                            if (showCompositorDiscord) baseWidth += compositorDiscordButton.width + Theme.spacingM;
+                            if (showReddit) baseWidth += redditButton.width + Theme.spacingM;
                             return baseWidth;
                         }
 
                         Item {
                             id: compositorButton
-                            width: 24
-                            height: 24
+                            width: 24; height: 24
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.verticalCenterOffset: -2
                             x: 0
-
                             property bool hovered: false
                             property string tooltipText: compositorTooltip
-
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + compositorLogo
@@ -377,7 +534,6 @@ Item {
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -390,14 +546,11 @@ Item {
 
                         Item {
                             id: matrixButton
-                            width: 30
-                            height: 24
+                            width: 30; height: 24
                             x: compositorButton.x + compositorButton.width + 4
                             visible: showMatrix
-
                             property bool hovered: false
                             property string tooltipText: I18n.tr("niri Matrix Chat")
-
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/matrix-logo-white.svg"
@@ -405,13 +558,11 @@ Item {
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
                                 layer.enabled: true
-
                                 layer.effect: MultiEffect {
                                     colorization: 1
                                     colorizationColor: Theme.surfaceText
                                 }
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -424,22 +575,17 @@ Item {
 
                         Item {
                             id: ircButton
-                            width: 24
-                            height: 24
+                            width: 24; height: 24
                             x: compositorButton.x + compositorButton.width + Theme.spacingM
                             anchors.verticalCenter: parent.verticalCenter
                             visible: showIrc
-
                             property bool hovered: false
                             property string tooltipText: ircTooltip
-
                             DankIcon {
                                 anchors.centerIn: parent
-                                name: "forum"
-                                size: 20
+                                name: "forum"; size: 20
                                 color: Theme.surfaceText
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -452,20 +598,15 @@ Item {
 
                         Item {
                             id: dmsDiscordButton
-                            width: 20
-                            height: 20
+                            width: 20; height: 20
                             x: {
-                                if (showMatrix)
-                                    return matrixButton.x + matrixButton.width + Theme.spacingM;
-                                if (showIrc)
-                                    return ircButton.x + ircButton.width + Theme.spacingM;
+                                if (showMatrix) return matrixButton.x + matrixButton.width + Theme.spacingM;
+                                if (showIrc) return ircButton.x + ircButton.width + Theme.spacingM;
                                 return compositorButton.x + compositorButton.width + Theme.spacingM;
                             }
                             anchors.verticalCenter: parent.verticalCenter
-
                             property bool hovered: false
                             property string tooltipText: dmsDiscordTooltip
-
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/discord.svg"
@@ -473,7 +614,6 @@ Item {
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -486,15 +626,12 @@ Item {
 
                         Item {
                             id: compositorDiscordButton
-                            width: 20
-                            height: 20
+                            width: 20; height: 20
                             x: dmsDiscordButton.x + dmsDiscordButton.width + Theme.spacingM
                             anchors.verticalCenter: parent.verticalCenter
                             visible: showCompositorDiscord
-
                             property bool hovered: false
                             property string tooltipText: compositorDiscordTooltip
-
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/discord.svg"
@@ -502,7 +639,6 @@ Item {
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
@@ -515,15 +651,12 @@ Item {
 
                         Item {
                             id: redditButton
-                            width: 20
-                            height: 20
+                            width: 20; height: 20
                             x: showCompositorDiscord ? compositorDiscordButton.x + compositorDiscordButton.width + Theme.spacingM : dmsDiscordButton.x + dmsDiscordButton.width + Theme.spacingM
                             anchors.verticalCenter: parent.verticalCenter
                             visible: showReddit
-
                             property bool hovered: false
                             property string tooltipText: redditTooltip
-
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace("file://", "").replace("/Modules/Settings/", "") + "/assets/reddit.svg"
@@ -531,7 +664,6 @@ Item {
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
                             }
-
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
