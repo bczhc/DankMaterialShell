@@ -7,6 +7,10 @@
 //@ pragma UseQApplication
 // ! TODO - replace pragma AppId when next QS releases, remove from GO launch injection.
 
+// Use software renderer for quickshell.
+//@ pragma Env QSG_RHI_BACKEND = vulkan
+//@ pragma Env VK_ICD_FILENAMES = /usr/share/vulkan/icd.d/lvp_icd.json
+
 import QtQuick
 import Quickshell
 
