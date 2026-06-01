@@ -61,6 +61,13 @@ var SPEC = {
     brightnessUserSetValues: { def: {} },
     brightnessExponentValues: { def: {} },
 
+    gpuMemClock: { def: "" },
+    gpuGfxClock: { def: "" },
+    gpuMemClockMin: { def: "" },
+    gpuMemClockMax: { def: "" },
+    gpuGfxClockMin: { def: "" },
+    gpuGfxClockMax: { def: "" },
+
     selectedGpuIndex: { def: 0 },
     nvidiaGpuTempEnabled: { def: false },
     nonNvidiaGpuTempEnabled: { def: false },

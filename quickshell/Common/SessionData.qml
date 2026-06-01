@@ -111,6 +111,12 @@ Singleton {
     property bool nvidiaGpuTempEnabled: false
     property bool nonNvidiaGpuTempEnabled: false
     property var enabledGpuPciIds: []
+    property string gpuMemClock: ""
+    property string gpuGfxClock: ""
+    property string gpuMemClockMin: ""
+    property string gpuMemClockMax: ""
+    property string gpuGfxClockMin: ""
+    property string gpuGfxClockMax: ""
 
     property string wifiDeviceOverride: ""
     property bool weatherHourlyDetailed: true
