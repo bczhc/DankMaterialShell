@@ -28,7 +28,7 @@ PanelWindow {
     property int screenY: 0
     property bool exiting: false
     property bool _isDestroying: false
-    readonly property color notificationBg: "#e6d2da"
+    readonly property color notificationBg: "#ffffff"
     property bool _finalized: false
     property real _lastReportedAlignedHeight: -1
     property real _storedTopMargin: 0

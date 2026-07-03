@@ -48,7 +48,7 @@ Rectangle {
     property real shadowOffsetXPx: shadowsAllowed ? Theme.elevationOffsetX(shadowElevation) : 0
     property real shadowOffsetYPx: shadowsAllowed ? (Theme.elevationOffsetY(shadowElevation, 1) + (cardHoverHandler.hovered ? 0.35 : 0)) : 0
     property bool __initialized: false
-    readonly property color notificationBg: "#e6d2da"
+    readonly property color notificationBg: "#ffffff"
 
     Component.onCompleted: {
         Qt.callLater(() => {
