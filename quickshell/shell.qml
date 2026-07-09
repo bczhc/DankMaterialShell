@@ -7,9 +7,9 @@
 //@ pragma UseQApplication
 // ! TODO - replace pragma AppId when next QS releases, remove from GO launch injection.
 
-// Use software renderer for quickshell.
+// Render on my Intel iGPU.
 //@ pragma Env QSG_RHI_BACKEND = vulkan
-//@ pragma Env VK_ICD_FILENAMES = /usr/share/vulkan/icd.d/lvp_icd.json
+//@ pragma Env VK_ICD_FILENAMES = /usr/share/vulkan/icd.d/intel_icd.json
 
 import QtQuick
 import Quickshell
