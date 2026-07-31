@@ -209,7 +209,7 @@ Item {
                     if (pinnedGroups.length > 0 && unpinnedGroups.length > 0) {
                         items.push(createSeparator("separator_grouped"));
                     }
-                    unpinnedGroups.forEach(item => items.push(item));
+                    addItemsWithWsDividers(items, unpinnedGroups);
 
                     root.pinnedAppCount = pinnedGroups.length + (SettingsData.dockLauncherEnabled ? 1 : 0);
                     return {
@@ -299,7 +299,7 @@ Item {
                     if (pinnedApps.length > 0 && remainingWindowItems.length > 0) {
                         items.push(createSeparator("separator_ungrouped"));
                     }
-                    remainingWindowItems.forEach(item => items.push(item));
+                    addItemsWithWsDividers(items, remainingWindowItems);
 
                     return {
                         items,
@@ -332,6 +332,24 @@ Item {
                         isPinned: false,
                         isRunning: false
                     };
+                }
+
+                function getWsId(item) {
+                    if (!item || !item.toplevel) return null;
+                    return item.toplevel.niriWorkspaceId ?? null;
+                }
+
+                function addItemsWithWsDividers(targetArray, itemsToAdd) {
+                    if (!itemsToAdd || itemsToAdd.length === 0) return;
+                    let lastWs = null;
+                    itemsToAdd.forEach(item => {
+                        const ws = getWsId(item);
+                        if (lastWs !== null && ws !== null && ws !== lastWs) {
+                            targetArray.push(createSeparator("ws_divider_" + lastWs + "_" + ws));
+                        }
+                        targetArray.push(item);
+                        if (ws !== null) lastWs = ws;
+                    });
                 }
 
                 function markAsOverflow(item) {
@@ -463,8 +481,8 @@ Item {
                     opacity: (isInOverflow && !root.overflowExpanded) ? 0 : 1
                     scale: (isInOverflow && !root.overflowExpanded) ? 0.8 : 1
 
-                    width: (isInOverflow && !root.overflowExpanded) ? 0 : (itemData.type === "separator" ? (root.isVertical ? root.iconSize : 8) : (root.isVertical ? root.iconSize : root.iconSize * 1.2))
-                    height: (isInOverflow && !root.overflowExpanded) ? 0 : (itemData.type === "separator" ? (root.isVertical ? 8 : root.iconSize) : (root.isVertical ? root.iconSize * 1.2 : root.iconSize))
+                    width: (isInOverflow && !root.overflowExpanded) ? 0 : (itemData.type === "separator" ? (root.isVertical ? root.iconSize : 12) : (root.isVertical ? root.iconSize : root.iconSize * 1.2))
+                    height: (isInOverflow && !root.overflowExpanded) ? 0 : (itemData.type === "separator" ? (root.isVertical ? 12 : root.iconSize) : (root.isVertical ? root.iconSize * 1.2 : root.iconSize))
 
                     Behavior on opacity {
                         NumberAnimation {
@@ -523,9 +541,9 @@ Item {
 
                     Rectangle {
                         visible: itemData.type === "separator"
-                        width: root.isVertical ? root.iconSize * 0.5 : 2
-                        height: root.isVertical ? 2 : root.iconSize * 0.5
-                        color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.3)
+                        width: root.isVertical ? root.iconSize * 0.6 : 2
+                        height: root.isVertical ? 2 : root.iconSize * 0.6
+                        color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g, Theme.surfaceText.b, 0.4)
                         radius: 1
                         anchors.centerIn: parent
                     }
