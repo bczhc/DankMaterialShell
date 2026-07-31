@@ -200,7 +200,7 @@ Item {
                             coreAppData: group.coreAppData || null,
                             isInOverflow: false
                         };
-                        (group.isPinned ? pinnedGroups : unpinnedGroups).push(item);
+                        (group.windows.length > 0 ? unpinnedGroups : pinnedGroups).push(item);
                     });
 
                     pinnedGroups.forEach(item => items.push(item));
@@ -264,20 +264,22 @@ Item {
 
                     const remainingWindowItems = windowItems.slice();
 
+                    let actualPinnedCount = 0;
+
                     pinnedApps.forEach(rawAppId => {
                         const appId = Paths.moddedAppId(rawAppId);
                         const coreAppData = getCoreAppData(appId);
                         const matchIndex = remainingWindowItems.findIndex(item => item.appId === appId);
 
                         if (matchIndex !== -1) {
-                            const windowItem = remainingWindowItems.splice(matchIndex, 1)[0];
+                            const windowItem = remainingWindowItems[matchIndex];
                             windowItem.isPinned = true;
                             windowItem.uniqueKey = "pinned_" + appId;
                             if (!windowItem.isCoreApp && coreAppData) {
                                 windowItem.isCoreApp = true;
                                 windowItem.coreAppData = coreAppData;
                             }
-                            items.push(windowItem);
+                            // Don't move to items — stays in remainingWindowItems for workspace grouping
                         } else {
                             items.push({
                                 uniqueKey: "pinned_" + appId,
@@ -290,13 +292,14 @@ Item {
                                 coreAppData: coreAppData,
                                 isInOverflow: false
                             });
+                            actualPinnedCount++;
                         }
                     });
 
                     root.pinnedAppCount = pinnedApps.length + (SettingsData.dockLauncherEnabled ? 1 : 0);
                     insertLauncher(items);
 
-                    if (pinnedApps.length > 0 && remainingWindowItems.length > 0) {
+                    if (actualPinnedCount > 0 && remainingWindowItems.length > 0) {
                         items.push(createSeparator("separator_ungrouped"));
                     }
                     addItemsWithWsDividers(items, remainingWindowItems);
