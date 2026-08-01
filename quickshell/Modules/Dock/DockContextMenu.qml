@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
@@ -516,6 +517,69 @@ PanelWindow {
                         root.close();
                     }
                 }
+            }
+
+            Rectangle {
+                visible: CompositorService.isNiri && root.appData && (root.appData.type === "window" || (root.appData.type === "grouped" && root.appData.windowCount > 0))
+                width: parent.width
+                height: 28
+                radius: Theme.cornerRadius
+                color: maximizeArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.leftMargin: Theme.spacingS
+                    anchors.right: parent.right
+                    anchors.rightMargin: Theme.spacingS
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: Theme.spacingXS
+
+                    DankIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "fullscreen"
+                        size: 14
+                        color: Theme.surfaceText
+                        opacity: 0.7
+                    }
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("Maximize")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceText
+                        font.weight: Font.Normal
+                        elide: Text.ElideRight
+                        wrapMode: Text.NoWrap
+                    }
+                }
+
+                DankRipple {
+                    id: maximizeRipple
+                    rippleColor: Theme.surfaceText
+                    cornerRadius: Theme.cornerRadius
+                }
+
+                MouseArea {
+                    id: maximizeArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onPressed: mouse => maximizeRipple.trigger(mouse.x, mouse.y)
+                    onClicked: {
+                        const windowId = root.appData?.toplevel?.niriWindowId;
+                        if (windowId !== undefined && windowId !== null) {
+                            Proc.runCommand("dock-maximize", ["niri", "msg", "action", "maximize-window-to-edges", "--id", String(windowId)], () => {});
+                        }
+                        root.close();
+                    }
+                }
+            }
+
+            Rectangle {
+                visible: root.appData && (root.appData.type === "window" || (root.appData.type === "grouped" && root.appData.windowCount > 0))
+                width: parent.width
+                height: 1
+                color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
             }
 
             Rectangle {
