@@ -501,6 +501,7 @@ func updatePluginCLI(idOrName string) error {
 func getCommonCommands() []*cobra.Command {
 	return []*cobra.Command{
 		versionCmd,
+		envCmd,
 		runCmd,
 		restartCmd,
 		restartDetachedCmd,

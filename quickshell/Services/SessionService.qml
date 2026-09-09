@@ -20,6 +20,11 @@ Singleton {
     property string inhibitReason: "Keep system awake"
     property string nvidiaCommand: ""
 
+    // Environment variables read from niri's `environment {}` blocks. These are
+    // applied to programs launched by DMS so that the niri session environment is
+    // honored even when DMS runs under systemd rather than as a niri child.
+    property var niriEnvironment: ({})
+
     readonly property bool nativeInhibitorAvailable: {
         try {
             return typeof IdleInhibitor !== "undefined";
@@ -61,6 +66,7 @@ Singleton {
             detectHibernateProcess.running = true;
             detectPrimeRunProcess.running = true;
             detectWtypeProcess.running = true;
+            niriEnvProcess.running = true;
             console.info("SessionService: Native inhibitor available:", nativeInhibitorAvailable);
             if (!SettingsData.loginctlLockIntegration) {
                 console.log("SessionService: loginctl lock integration disabled by user");
@@ -132,6 +138,28 @@ Singleton {
         command: ["which", "wtype"]
         onExited: exitCode => {
             wtypeAvailable = (exitCode === 0);
+        }
+    }
+
+    Process {
+        id: niriEnvProcess
+        running: false
+        command: ["dms", "env", "--json"]
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const trimmed = text.trim();
+                if (trimmed.length === 0)
+                    return;
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                        root.niriEnvironment = parsed;
+                    }
+                } catch (e) {
+                    console.warn("SessionService: failed to parse niri environment:", e);
+                }
+            }
         }
     }
 
@@ -231,7 +259,7 @@ Singleton {
         const cursorEnv = typeof SettingsData.getCursorEnvironment === "function" ? SettingsData.getCursorEnvironment() : {};
 
         const overrideEnv = override?.envVars ? parseEnvVars(override.envVars) : {};
-        const finalEnv = Object.assign({}, cursorEnv, overrideEnv);
+        const finalEnv = Object.assign({}, niriEnvironment, cursorEnv, overrideEnv);
 
         if (desktopEntry.runInTerminal) {
             const terminal = Quickshell.env("TERMINAL") || "xterm";
@@ -283,13 +311,14 @@ Singleton {
         const prefix = userPrefix.length > 0 ? userPrefix : defaultPrefix;
         const workDir = desktopEntry.workingDirectory || Quickshell.env("HOME");
         const cursorEnv = typeof SettingsData.getCursorEnvironment === "function" ? SettingsData.getCursorEnvironment() : {};
+        const actionEnv = Object.assign({}, niriEnvironment, cursorEnv);
 
         if (prefix.length > 0 && needsShellExecution(prefix)) {
             const escapedCmd = cmd.map(arg => escapeShellArg(arg)).join(" ");
             Quickshell.execDetached({
                 command: ["sh", "-c", `${prefix} ${escapedCmd}`],
                 workingDirectory: workDir,
-                environment: cursorEnv
+                environment: actionEnv
             });
             return;
         }
@@ -300,7 +329,7 @@ Singleton {
         Quickshell.execDetached({
             command: cmd,
             workingDirectory: workDir,
-            environment: cursorEnv
+            environment: actionEnv
         });
     }
 
